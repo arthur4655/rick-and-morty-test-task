@@ -27,7 +27,7 @@ from Rick and Morty series whose names contain the entered string.
 ## 🚀Instructions for launching the project
 1. Clone project from github.
 2. Make sure you have installed docker on your PC
-3. Run
+3. Run in terminal
 ```bash
 docker-compose up
 ```
