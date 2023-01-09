@@ -1,11 +1,9 @@
-package spring.boot.api.rickandmorty.service;
+package spring.boot.api.rickandmorty.mapper;
 
 import org.springframework.stereotype.Service;
 import spring.boot.api.rickandmorty.dto.CharacterResponseDto;
 import spring.boot.api.rickandmorty.dto.api.ApiCharactersDto;
-import spring.boot.api.rickandmorty.model.Gender;
 import spring.boot.api.rickandmorty.model.SeriesCharacter;
-import spring.boot.api.rickandmorty.model.Status;
 
 @Service
 public class SeriesCharacterMapper {
@@ -13,8 +11,10 @@ public class SeriesCharacterMapper {
         SeriesCharacter seriesCharacter = new SeriesCharacter();
         seriesCharacter.setExternalId(apiCharactersDto.getId());
         seriesCharacter.setName(apiCharactersDto.getName());
-        seriesCharacter.setGender(Gender.valueOf(apiCharactersDto.getGender().toUpperCase()));
-        seriesCharacter.setStatus(Status.valueOf(apiCharactersDto.getStatus().toUpperCase()));
+        seriesCharacter.setGender(SeriesCharacter.Gender.valueOf(apiCharactersDto
+                .getGender().toUpperCase()));
+        seriesCharacter.setStatus(SeriesCharacter.Status.valueOf(apiCharactersDto
+                .getStatus().toUpperCase()));
         seriesCharacter.setType(apiCharactersDto.getType());
         return seriesCharacter;
     }

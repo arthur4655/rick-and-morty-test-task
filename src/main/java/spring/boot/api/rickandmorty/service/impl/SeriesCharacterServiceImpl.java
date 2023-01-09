@@ -1,51 +1,36 @@
 package spring.boot.api.rickandmorty.service.impl;
 
 import jakarta.annotation.PostConstruct;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import spring.boot.api.rickandmorty.dto.CharacterResponseDto;
-import spring.boot.api.rickandmorty.dto.api.ApiResponseDto;
+import spring.boot.api.rickandmorty.dto.api.ApiCharactersDto;
+import spring.boot.api.rickandmorty.mapper.SeriesCharacterMapper;
 import spring.boot.api.rickandmorty.model.SeriesCharacter;
 import spring.boot.api.rickandmorty.repository.SeriesCharacterRepository;
-import spring.boot.api.rickandmorty.service.HttpClient;
-import spring.boot.api.rickandmorty.service.SeriesCharacterMapper;
 import spring.boot.api.rickandmorty.service.SeriesCharacterService;
+import spring.boot.api.rickandmorty.util.CharacterParser;
 
 @Service
 public class SeriesCharacterServiceImpl implements SeriesCharacterService {
     public static final int EXTERNAL_ID = 0;
     public static final int INTERNAL_ID = 1;
-    public static final String API_URL = "https://rickandmortyapi.com/api/character";
-    private HttpClient httpClient;
-    private SeriesCharacterRepository seriesCharacterRepository;
-    private SeriesCharacterMapper mapper;
-    private Map<Long, Long> currentIdsInDb;
+    @Value("${api.url.value}")
+    private String apiUrl;
+    private final SeriesCharacterRepository seriesCharacterRepository;
+    private final SeriesCharacterMapper mapper;
+    private final CharacterParser characterParser;
 
-    public SeriesCharacterServiceImpl(HttpClient httpClient,
-                                      SeriesCharacterRepository seriesCharacterRepository,
-                                      SeriesCharacterMapper mapper) {
-        this.httpClient = httpClient;
+    public SeriesCharacterServiceImpl(SeriesCharacterRepository seriesCharacterRepository,
+                                      SeriesCharacterMapper mapper,
+                                      CharacterParser characterParser) {
         this.seriesCharacterRepository = seriesCharacterRepository;
         this.mapper = mapper;
-    }
-
-    @PostConstruct
-    @Scheduled(cron = "0 0 8 * * ?")
-    @Override
-    public void parseCharactersFromApi() {
-        ApiResponseDto apiResponseDto = httpClient.get(API_URL, ApiResponseDto.class);
-        currentIdsInDb = seriesCharacterRepository.getAllIdsInDb().stream()
-                .collect(Collectors.toMap(l -> l[EXTERNAL_ID], l -> l[INTERNAL_ID]));
-        saveOrdUpdateCharacters(apiResponseDto);
-        while (apiResponseDto.getInfo().getNext() != null) {
-            apiResponseDto = httpClient.get(apiResponseDto.getInfo().getNext(),
-                            ApiResponseDto.class);
-            saveOrdUpdateCharacters(apiResponseDto);
-        }
+        this.characterParser = characterParser;
     }
 
     @Override
@@ -61,17 +46,20 @@ public class SeriesCharacterServiceImpl implements SeriesCharacterService {
                 .collect(Collectors.toList());
     }
 
-    private void saveOrdUpdateCharacters(ApiResponseDto apiResponseDto) {
-        Arrays.stream(apiResponseDto.getResults())
+    @PostConstruct
+    @Scheduled(cron = "0 0 8 * * ?")
+    public void syncCharactersInDb() {
+        Map<Long, Long> currentIdsInDb = seriesCharacterRepository.getAllIdsInDb().stream()
+                .collect(Collectors.toMap(l -> l[EXTERNAL_ID], l -> l[INTERNAL_ID]));
+        List<ApiCharactersDto> apiCharactersDtos = characterParser.parseCharactersFromApi(apiUrl);
+        List<SeriesCharacter> charactersToSync = apiCharactersDtos.stream()
                 .map(mapper::toModel)
-                .forEach(m -> {
+                .peek(m -> {
                     if (currentIdsInDb.get(m.getExternalId()) != null) {
                         m.setId(currentIdsInDb.get(m.getExternalId()));
-                        seriesCharacterRepository.save(m);
-                    } else {
-                        seriesCharacterRepository.save(m);
                     }
-                });
+                })
+                .collect(Collectors.toList());
+        seriesCharacterRepository.saveAll(charactersToSync);
     }
-
 }

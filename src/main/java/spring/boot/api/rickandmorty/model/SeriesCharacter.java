@@ -33,4 +33,17 @@ public class SeriesCharacter {
     @Enumerated(EnumType.STRING)
     private Gender gender;
     private String type;
+
+    public enum Gender {
+        MALE,
+        FEMALE,
+        GENDERLESS,
+        UNKNOWN;
+    }
+
+    public enum Status {
+        ALIVE,
+        DEAD,
+        UNKNOWN;
+    }
 }
