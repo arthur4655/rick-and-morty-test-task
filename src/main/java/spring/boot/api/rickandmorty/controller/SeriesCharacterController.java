@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import spring.boot.api.rickandmorty.dto.CharacterResponseDto;
-import spring.boot.api.rickandmorty.service.SeriesCharacterMapper;
+import spring.boot.api.rickandmorty.mapper.SeriesCharacterMapper;
 import spring.boot.api.rickandmorty.service.SeriesCharacterService;
 
 @RestController
